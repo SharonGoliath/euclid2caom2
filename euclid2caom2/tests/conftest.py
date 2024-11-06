@@ -2,7 +2,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2023.                            (c) 2023.
+#  (c) 2024.                             (c) 2024.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -66,64 +66,36 @@
 # ***********************************************************************
 #
 
-"""
-This module implements the ObsBlueprint mapping, as well as the workflow 
-entry point that executes the workflow.
-"""
+from os.path import dirname, join, realpath
+from caom2pipe.manage_composable import Config, StorageName
+import pytest
 
-from os.path import basename
-
-from caom2pipe import caom_composable as cc
-from caom2pipe import manage_composable as mc
+COLLECTION = 'EUCLID'
+SCHEME = 'cadc'
+PREVIEW_SCHEME = 'cadc'
 
 
-__all__ = [
-    'BlankMapping',
-    'BlankName',
-]
+@pytest.fixture()
+def test_config():
+    config = Config()
+    config.collection = COLLECTION
+    config.preview_scheme = PREVIEW_SCHEME
+    config.scheme = SCHEME
+    config.logging_level = 'INFO'
+    StorageName.collection = config.collection
+    StorageName.preview_scheme = config.preview_scheme
+    StorageName.scheme = config.scheme
+    StorageName.data_source_extensions = config.data_source_extensions
+    return config
 
 
-class BlankName(mc.StorageName):
-    """Naming rules:
-    - support mixed-case file name storage, and mixed-case obs id values
-    - support uncompressed files in storage
-    """
+@pytest.fixture()
+def test_data_dir():
+    this_dir = dirname(realpath(__file__))
+    fqn = join(this_dir, 'data')
+    return fqn
 
-    BLANK_NAME_PATTERN = '*'
-
-    def __init__(self, entry):
-        super().__init__(file_name=basename(entry), source_names=[entry])
-
-    def is_valid(self):
-        return True
-
-
-class BlankMapping(cc.TelescopeMapping):
-    def __init__(self, storage_name, headers, clients, observable, observation, config):
-        super().__init__(storage_name, headers, clients, observable, observation, config)
-
-    def accumulate_blueprint(self, bp):
-        """Configure the telescope-specific ObsBlueprint at the CAOM model Observation level."""
-        self._logger.debug('Begin accumulate_bp.')
-        super().accumulate_blueprint(bp)
-
-        bp.set('Plane.calibrationLevel', 1)
-        bp.set('Plane.dataProductType', 'image')
-        bp.set('Artifact.productType', 'science')
-        bp.set('Artifact.releaseType', 'data')
-
-        bp.configure_position_axes((1, 2))
-        bp.configure_time_axis(3)
-        bp.configure_energy_axis(4)
-        bp.configure_polarization_axis(5)
-        bp.configure_observable_axis(6)
-        self._logger.debug('Done accumulate_bp.')
-
-    def update(self, file_info):
-        """Called to fill multiple CAOM model elements and/or attributes (an n:n relationship between TDM attributes 
-        and CAOM attributes).
-        """
-        return super().update(file_info)
-
-    def _update_artifact(self, artifact):
-        pass
+             
+@pytest.fixture()
+def change_test_dir(tmp_path, monkeypatch): 
+    monkeypatch.chdir(tmp_path)

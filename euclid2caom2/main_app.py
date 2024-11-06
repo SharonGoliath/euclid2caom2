@@ -2,7 +2,7 @@
 # ******************  CANADIAN ASTRONOMY DATA CENTRE  *******************
 # *************  CENTRE CANADIEN DE DONNÉES ASTRONOMIQUES  **************
 #
-#  (c) 2023.                            (c) 2023.
+#  (c) 2024.                            (c) 2024.
 #  Government of Canada                 Gouvernement du Canada
 #  National Research Council            Conseil national de recherches
 #  Ottawa, Canada, K1A 0R6              Ottawa, Canada, K1A 0R6
@@ -66,60 +66,64 @@
 # ***********************************************************************
 #
 
-from mock import patch
+"""
+This module implements the ObsBlueprint mapping, as well as the workflow 
+entry point that executes the workflow.
+"""
 
-from blank2caom2 import file2caom2_augmentation, main_app
-from caom2.diff import get_differences
-from caom2pipe import astro_composable as ac
+from os.path import basename
+
+from caom2pipe import caom_composable as cc
 from caom2pipe import manage_composable as mc
-from caom2pipe import reader_composable as rdc
-
-import glob
-import os
 
 
-def pytest_generate_tests(metafunc):
-    obs_id_list = glob.glob(f'{metafunc.config.invocation_dir}/data/*.fits.header')
-    metafunc.parametrize('test_name', obs_id_list)
+__all__ = [
+    'EuclidMapping',
+    'EuclidName',
+]
 
 
-@patch('caom2utils.data_util.get_local_headers_from_fits')
-def test_main_app(header_mock, test_name, test_config):
-    header_mock.side_effect = ac.make_headers_from_file
-    storage_name = main_app.BlankName(entry=test_name)
-    metadata_reader = rdc.FileMetadataReader()
-    metadata_reader.set(storage_name)
-    file_type = 'application/fits'
-    metadata_reader.file_info[storage_name.destination_uris[0]].file_type = file_type
-    kwargs = {
-        'storage_name': storage_name,
-        'metadata_reader': metadata_reader,
-        'config': test_config,
-    }
-    expected_fqn = test_name.replace('.fits.header', '.expected.xml')
-    in_fqn = expected_fqn.replace('.expected', '.in')
-    actual_fqn = expected_fqn.replace('expected', 'actual')
-    if os.path.exists(actual_fqn):
-        os.unlink(actual_fqn)
-    observation = None
-    if os.path.exists(in_fqn):
-        observation = mc.read_obs_from_file(in_fqn)
-    observation = file2caom2_augmentation.visit(observation, **kwargs)
-    if observation is None:
-        assert False, f'Did not create observation for {test_name}'
-    else:
-        if os.path.exists(expected_fqn):
-            expected = mc.read_obs_from_file(expected_fqn)
-            compare_result = get_differences(expected, observation)
-            if compare_result is not None:
-                mc.write_obs_to_file(observation, actual_fqn)
-                compare_text = '\n'.join([r for r in compare_result])
-                msg = (
-                    f'Differences found in observation {expected.observation_id}\n'
-                    f'{compare_text}'
-                )
-                raise AssertionError(msg)
-        else:
-            mc.write_obs_to_file(observation, actual_fqn)
-            assert False, f'nothing to compare to for {test_name}, missing {expected_fqn}'
-    # assert False  # cause I want to see logging messages
+class EuclidName(mc.StorageName):
+    """Naming rules:
+    - support mixed-case file name storage, and mixed-case obs id values
+    - support uncompressed files in storage
+    """
+
+    EUCLID_NAME_PATTERN = '*'
+
+    def __init__(self, entry):
+        super().__init__(file_name=basename(entry), source_names=[entry])
+
+    def is_valid(self):
+        return True
+
+
+class EuclidMapping(cc.TelescopeMapping):
+    def __init__(self, storage_name, headers, clients, observable, observation, config):
+        super().__init__(storage_name, headers, clients, observable, observation, config)
+
+    def accumulate_blueprint(self, bp):
+        """Configure the telescope-specific ObsBlueprint at the CAOM model Observation level."""
+        self._logger.debug('Begin accumulate_bp.')
+        super().accumulate_blueprint(bp)
+
+        bp.set('Plane.calibrationLevel', 1)
+        bp.set('Plane.dataProductType', 'image')
+        bp.set('Artifact.productType', 'science')
+        bp.set('Artifact.releaseType', 'data')
+
+        bp.configure_position_axes((1, 2))
+        bp.configure_time_axis(3)
+        bp.configure_energy_axis(4)
+        bp.configure_polarization_axis(5)
+        bp.configure_observable_axis(6)
+        self._logger.debug('Done accumulate_bp.')
+
+    def update(self, file_info):
+        """Called to fill multiple CAOM model elements and/or attributes (an n:n relationship between TDM attributes 
+        and CAOM attributes).
+        """
+        return super().update(file_info)
+
+    def _update_artifact(self, artifact):
+        pass
