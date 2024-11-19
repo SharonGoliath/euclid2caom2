@@ -51,8 +51,8 @@ retry_file_name: retries.txt
 progress_file_name: progress.txt
 #
 collection: EUCLID
-scheme: cadc
-preview_scheme: cadc
+scheme: esa
+preview_scheme: esa
 #
 # CADC service execution metrics
 #

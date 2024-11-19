@@ -71,18 +71,33 @@ from caom2pipe import caom_composable as cc
 from euclid2caom2 import main_app
 
 
-__all__ = ['EuclidFits2caom2Visitor']
+__all__ = ['EUCLIDFits2caom2Visitor']
 
 
-class EuclidFits2caom2Visitor(cc.Fits2caom2Visitor):
+class EUCLIDFits2caom2Visitor(cc.Fits2caom2VisitorRunnerMeta):
     def __init__(self, observation, **kwargs):
         super().__init__(observation, **kwargs)
 
-    def _get_mapping(self, headers, _):
-        return main_app.EuclidMapping(
-            self._storage_name, headers, self._clients, self._observable, self._observation, self._config
-        )
+    def _get_mapping(self, dest_uri):
+        if '-NIR-' in dest_uri:
+            return main_app.EUCLIDMappingNIR(
+                self._clients,
+                self._config,
+                dest_uri,
+                self._observation,
+                self._reporter,
+                self._storage_name,
+            )
+        else:
+            return main_app.EUCLIDMappingVIS(
+                self._clients,
+                self._config,
+                dest_uri,
+                self._observation,
+                self._reporter,
+                self._storage_name,
+            )
 
 
 def visit(observation, **kwargs):
-    return EuclidFits2caom2Visitor(observation, **kwargs).visit()
+    return EUCLIDFits2caom2Visitor(observation, **kwargs).visit()

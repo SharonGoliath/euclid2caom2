@@ -67,7 +67,7 @@
 #
 
 """
-Implements the default entry point functions for the workflow 
+Implements the default entry point functions for the workflow
 application.
 
 'run' executes based on either provided lists of work, or files on disk.
@@ -78,8 +78,9 @@ import logging
 import sys
 import traceback
 
-from caom2pipe.run_composable import run_by_state, run_by_todo
+from caom2pipe.run_composable import run_by_state_runner_meta, run_by_todo_runner_meta
 from euclid2caom2 import file2caom2_augmentation
+from euclid2caom2.main_app import EUCLIDName
 
 
 META_VISITORS = [file2caom2_augmentation]
@@ -93,7 +94,9 @@ def _run():
     :return 0 if successful, -1 if there's any sort of failure. Return status
         is used by airflow for task instance management and reporting.
     """
-    return run_by_todo(meta_visitors=META_VISITORS, data_visitors=DATA_VISITORS)
+    return run_by_todo_runner_meta(
+        meta_visitors=META_VISITORS, data_visitors=DATA_VISITORS, storage_name_ctor=EUCLIDName
+    )
 
 
 def run():
@@ -111,7 +114,9 @@ def run():
 def _run_incremental():
     """Uses a state file with a timestamp to identify the work to be done.
     """
-    return run_by_state(meta_visitors=META_VISITORS, data_visitors=DATA_VISITORS)
+    return run_by_state_runner_meta(
+        meta_visitors=META_VISITORS, data_visitors=DATA_VISITORS, storage_name_ctor=EUCLIDName
+    )
 
 
 def run_incremental():

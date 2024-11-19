@@ -66,13 +66,14 @@
 # ***********************************************************************
 #
 
-from mock import patch
+from mock import Mock, patch
 
+from astropy.io.votable import parse_single_table
+from caom2utils.data_util import get_local_file_info
 from euclid2caom2 import file2caom2_augmentation, main_app
 from caom2.diff import get_differences
 from caom2pipe import astro_composable as ac
 from caom2pipe import manage_composable as mc
-from caom2pipe import reader_composable as rdc
 
 import glob
 import os
@@ -83,18 +84,23 @@ def pytest_generate_tests(metafunc):
     metafunc.parametrize('test_name', obs_id_list)
 
 
-@patch('caom2utils.data_util.get_local_headers_from_fits')
-def test_main_app(header_mock, test_name, test_config):
-    header_mock.side_effect = ac.make_headers_from_file
-    storage_name = main_app.EuclidName(entry=test_name)
-    metadata_reader = rdc.FileMetadataReader()
-    metadata_reader.set(storage_name)
-    file_type = 'application/fits'
-    metadata_reader.file_info[storage_name.destination_uris[0]].file_type = file_type
+@patch('caom2pipe.astro_composable.get_vo_table')
+def test_main_app(svo_mock, test_name, test_config, tmp_path, change_test_dir):
+    import logging
+    # logging.getLogger().setLevel(logging.DEBUG)
+    svo_mock.side_effect = _svo_mock
+    test_config.change_working_directory(tmp_path)
+    test_reporter = mc.ExecutionReporter(test_config, mc.Observable(test_config))
+    storage_name = main_app.EUCLIDName(source_names=[test_name])
+    uri_key = storage_name.destination_uris[0].replace('.header', '')
+    storage_name.file_info[uri_key] = get_local_file_info(test_name)
+    storage_name.file_info[uri_key].file_type = 'application/fits'
+    storage_name.metadata[uri_key] = ac.make_headers_from_file(test_name)
     kwargs = {
-        'storage_name': storage_name,
-        'metadata_reader': metadata_reader,
+        'clients': Mock(),
         'config': test_config,
+        'reporter': test_reporter,
+        'storage_name': storage_name,
     }
     expected_fqn = test_name.replace('.fits.header', '.expected.xml')
     in_fqn = expected_fqn.replace('.expected', '.in')
@@ -123,3 +129,16 @@ def test_main_app(header_mock, test_name, test_config):
             mc.write_obs_to_file(observation, actual_fqn)
             assert False, f'nothing to compare to for {test_name}, missing {expected_fqn}'
     # assert False  # cause I want to see logging messages
+
+
+def _svo_mock(url):
+    try:
+        import logging
+        x = url.split('/')
+        filter_name = x[-1].replace('&VERB=0', '')
+        logging.error(filter_name)
+        votable = parse_single_table(f'{os.path.dirname(os.path.realpath(__file__))}/data/filters/{filter_name}.xml')
+        return votable, None
+    except Exception as _:
+        import logging
+        logging.error(f'get_vo_table failure for url {url}')

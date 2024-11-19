@@ -69,7 +69,7 @@
 from mock import patch
 
 from caom2pipe import manage_composable as mc
-from jcmtsl2caom2 import composable
+from euclid2caom2 import composable
 
 
 @patch('caom2pipe.client_composable.ClientCollection')
