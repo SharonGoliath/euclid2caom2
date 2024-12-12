@@ -106,6 +106,13 @@ class EUCLIDName(mc.StorageName):
         esa:EUCLID/EUC_MER_FINAL-CAT_TILE102070858-FCBD03_20241106T175237.497132Z_00.00.fits
         esa:EUCLID/EUC_MER_FINAL-CUTOUTS-CAT_TILE102070858-755293_20241106T105450.172109Z_00.00.fits
         esa:EUCLID/EUC_MER_FINAL-MORPH-CAT_TILE102070858-46295E_20241106T175236.702482Z_00.00.fits
+
+
+    ProductType auxiliary - SGw - 11-12-24
+    esa:EUCLID/EUC_MER_BGMOD-VIS_TILE102070858-F79595_20241105T125727.727179Z_00.00.fits
+    esa:EUCLID/EUC_MER_GRID-PSF-VIS_TILE102070858-7333BC_20241104T161703.183167Z_00.00.fits
+    esa:EUCLID/EUC_MER_MOSAIC-VIS-FLAG_TILE102070858-B260B9_20241104T161703.183145Z_00.00.fits
+
     """
 
     EUCLID_NAME_PATTERN = '*'
@@ -119,11 +126,14 @@ class EUCLIDName(mc.StorageName):
             raise mc.CadcException(f'Calling get_filter_name when it cannot answer correctly.')
         return result
 
-    def is_catalog(self):
-        return '-CAT_' in self._file_name or '_CATALOG-' in self._file_name
-
-    def is_grid_psf(self):
-        return '_GRID-PSF-' in self._file_name
+    def is_auxiliary(self):
+        return (
+            '-CAT_' in self._file_name
+            or '_CATALOG-' in self._file_name
+            or '_BGMOD-' in self._file_name
+            or '_GRID-PSF-' in self._file_name
+            or '-FLAG_' in self._file_name
+        )
 
     def is_valid(self):
         return True
@@ -149,7 +159,7 @@ class EUCLIDName(mc.StorageName):
                 self._product_id = f'{self._obs_id}_{product_id_bits[-1]}'
 
 
-class EUCLIDMappingCatalog(cc.TelescopeMapping2):
+class EUCLIDMappingAuxiliary(cc.TelescopeMapping2):
     def __init__(self, clients, config, dest_uri, observation, reporter, storage_name):
         self._reporter = reporter
         super().__init__(
@@ -183,12 +193,10 @@ class EUCLIDMappingCatalog(cc.TelescopeMapping2):
         bp.set('Plane.dataProductType', DataProductType.CATALOG)
         bp.set('Plane.dataRelease', '2030-01-01T00:00:00.000')
         bp.add_attribute('Plane.metaRelease', 'DATE')
-        bp.add_attribute('Plane.provenance.name', 'SOFTNAME')
-        bp.add_attribute('Plane.provenance.version', 'SOFTVERS')
-        bp.add_attribute('Plane.provenance.project', 'SOFTAUTH')
-        bp.add_attribute('Plane.provenance.producer', 'ORIGIN')
-        bp.set('Plane.provenance.reference', '_get_provenance_reference()')
-        bp.add_attribute('Plane.provenance.lastExecuted', 'DATE')
+        bp.set('Plane.provenance.name', 'Euclid OU-MER')
+        # # SGw 12-12-24
+        bp.set('Plane.provenance.project', 'Euclid OU-MER')
+        bp.set('Plane.provenance.reference', 'https://www.euclid-ec.org')
 
         bp.set('Artifact.productType', ProductType.AUXILIARY)
         bp.set('Artifact.releaseType', ReleaseType.META)
@@ -237,7 +245,7 @@ class EUCLIDMappingCatalog(cc.TelescopeMapping2):
         return self._observation
 
 
-class EUCLIDMappingNIR(EUCLIDMappingCatalog):
+class EUCLIDMappingNIR(EUCLIDMappingAuxiliary):
     def __init__(self, clients, config, dest_uri, observation, reporter, storage_name):
         super().__init__(
             clients,
@@ -253,6 +261,14 @@ class EUCLIDMappingNIR(EUCLIDMappingCatalog):
         self._logger.debug('Begin accumulate_bp.')
         super().accumulate_blueprint(bp)
         bp.set('Plane.dataProductType', DataProductType.IMAGE)
+        bp.clear('Plane.provenance.name')
+        bp.add_attribute('Plane.provenance.name', 'SOFTNAME')
+        bp.add_attribute('Plane.provenance.version', 'SOFTVERS')
+        # SGw 12-12-24
+        bp.set('Plane.provenance.project', 'Euclid OU-MER')
+        bp.add_attribute('Plane.provenance.producer', 'ORIGIN')
+        bp.set('Plane.provenance.reference', '_get_provenance_reference()')
+        bp.add_attribute('Plane.provenance.lastExecuted', 'DATE')
         bp.set('Artifact.productType', self._get_artifact_product_type())
 
         bp.configure_position_axes((1, 2))
@@ -306,29 +322,10 @@ class EUCLIDMappingNIR(EUCLIDMappingCatalog):
         return result
 
     def _update_artifact(self, artifact):
-        replaced_parts = []
         for part in artifact.parts.values():
             for chunk in part.chunks:
                 # not for cut-outs
                 chunk.energy_axis = None
-
-        # the parts in the artifact.parts collection are immutable
-        if self._storage_name.is_grid_psf():
-            for part_key in ['0', '1', '2']:
-                temp_part = artifact.parts.pop(part_key)
-                temp_part.name = self._storage_name.metadata[
-                    self._storage_name.file_uri
-                ][int(part_key)].get('XTENSION', 'PRIMARY')
-                if part_key == '2':
-                    temp_part.chunks = TypedList(Chunk,)
-                replaced_parts.append(temp_part)
-
-        for part in replaced_parts:
-            artifact.parts.add(part)
-                # elif part.name == '1':
-                #     part.name = 'IMAGE'
-                # elif part.name == '2':
-                #     part.name = 'BINTABLE'
 
 
 class EUCLIDMappingVIS(EUCLIDMappingNIR):

@@ -80,8 +80,8 @@ class EUCLIDFits2caom2Visitor(cc.Fits2caom2VisitorRunnerMeta):
         super().__init__(observation, **kwargs)
 
     def _get_mapping(self, dest_uri):
-        if self._storage_name.is_catalog():
-            return main_app.EUCLIDMappingCatalog(
+        if self._storage_name.is_auxiliary():
+            return main_app.EUCLIDMappingAuxiliary(
                 self._clients,
                 self._config,
                 dest_uri,
@@ -111,7 +111,7 @@ class EUCLIDFits2caom2Visitor(cc.Fits2caom2VisitorRunnerMeta):
 
     def _get_parser(self, blueprint, uri):
         headers = self._storage_name.metadata.get(uri)
-        if headers is None or len(headers) == 0 or self._storage_name.is_catalog():
+        if headers is None or len(headers) == 0 or self._storage_name.is_auxiliary():
             parser = BlueprintParser(blueprint, uri)
         else:
             parser = FitsParser(headers, blueprint, uri)
