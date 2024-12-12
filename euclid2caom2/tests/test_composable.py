@@ -76,7 +76,7 @@ from euclid2caom2 import composable
 @patch('caom2pipe.execute_composable.OrganizeExecutes.do_one')
 def test_run(do_one_mock, clients_mock, test_config, tmp_path, change_test_dir):
     do_one_mock.return_value = (0, None)
-    test_f_id = 'test_file_id'
+    test_f_id = 'EUC_MER_BGMOD-VIS_TILE102070858-F79595_20241105T125727.727179Z_00.00'
     test_f_name = f'{test_f_id}.fits'
     test_config.change_working_directory(tmp_path.as_posix())
     test_config.proxy_file_name = 'test_proxy.fqn'

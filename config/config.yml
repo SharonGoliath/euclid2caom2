@@ -53,7 +53,9 @@ progress_file_name: progress.txt
 collection: EUCLID
 scheme: esa
 preview_scheme: esa
-#
+data_read_groups:
+  - ivo://cadc.nrc.ca/gms?CADC
+  - ivo://cadc.nrc.ca/gms?EuclidCanRead
 # CADC service execution metrics
 #
 observe_execution: True

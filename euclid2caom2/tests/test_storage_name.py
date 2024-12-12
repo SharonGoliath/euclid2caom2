@@ -66,17 +66,18 @@
 # ***********************************************************************
 #
 
-from caom2pipe import manage_composable as mc
 from euclid2caom2 import EUCLIDName
 
 
 def test_is_valid():
-    assert EUCLIDName('anything').is_valid()
+    assert EUCLIDName(
+        source_names=['EUC_MER_BGSUB-MOSAIC-VIS_TILE102070858-5ED2D5_20241105T125727.727353Z_00.00.fits']
+    ).is_valid()
 
 
-def test_storage_name(test_config):
-    test_obs_id = 'TEST_OBS_ID'
-    test_f_name = f'{test_obs_id}.fits'
+def test_storage_name_locations(test_config):
+    # test that location patterns can be handled by the constructor
+    test_f_name = f'EUC_MER_BGSUB-MOSAIC-VIS_TILE102070858-5ED2D5_20241105T125727.727353Z_00.00.fits.fits'
     test_uri = f'{test_config.scheme}:{test_config.collection}/{test_f_name}'
     for index, entry in enumerate(
         [
@@ -90,8 +91,30 @@ def test_storage_name(test_config):
         test_subject = EUCLIDName(source_names=[entry])
         assert test_subject.file_id == test_f_name.replace('.fits', '').replace('.header', ''), f'wrong file id {index}'
         assert test_subject.file_uri == test_uri, f'wrong uri {index}'
-        assert test_subject.obs_id == test_obs_id, f'wrong obs id {index}'
-        assert test_subject.product_id == test_obs_id, f'wrong product id {index}'
         assert test_subject.source_names == [entry], f'wrong source names {index}'
         assert test_subject.destination_uris == [test_uri], f'wrong uris {index} {test_subject}'
 
+
+def test_storage_name(test_config):
+    # test that obs_id, product_id setting is handled by the ctor
+    entries = { 'TILE102070858': {
+        'esa:EUCLID/EUC_MER_BGSUB-MOSAIC-VIS_TILE102070858-5ED2D5_20241105T125727.727353Z_00.00.fits': 'VIS',
+        'esa:EUCLID/EUC_MER_BGMOD-VIS_TILE102070858-F79595_20241105T125727.727179Z_00.00.fits': 'VIS',
+        'esa:EUCLID/EUC_MER_GRID-PSF-VIS_TILE102070858-7333BC_20241104T161703.183167Z_00.00.fits': 'VIS',
+        'esa:EUCLID/EUC_MER_MOSAIC-VIS-RMS_TILE102070858-BB87CE_20241104T161703.183124Z_00.00.fits': 'VIS',
+        'esa:EUCLID/EUC_MER_MOSAIC-VIS-FLAG_TILE102070858-B260B9_20241104T161703.183145Z_00.00.fits': 'VIS',
+        'esa:EUCLID/EUC_MER_CATALOG-PSF-VIS_TILE102070858-F69E9E_20241105T134129.112687Z_00.00.fits': 'VIS',
+        'esa:EUCLID/EUC_MER_FINAL-CAT_TILE102070858-FCBD03_20241106T175237.497132Z_00.00.fits': 'CAT',
+        'esa:EUCLID/EUC_MER_FINAL-CUTOUTS-CAT_TILE102070858-755293_20241106T105450.172109Z_00.00.fits': 'CUTOUTS_CAT',
+        'esa:EUCLID/EUC_MER_FINAL-MORPH-CAT_TILE102070858-46295E_20241106T175236.702482Z_00.00.fits': 'MORPH_CAT',
+    },
+        'TILE102165193': {
+            'esa:EUCLID/EUC_MER_BGSUB-MOSAIC-NIR-Y_TILE102165193-683034_20240526T184144.400003Z_00.00.xml': 'Y',
+        }
+    }
+
+    for tile_id, entry in entries.items():
+        for uri, product_id in entry.items():
+            test_subject = EUCLIDName(source_names=[uri])
+            assert test_subject.obs_id == tile_id, f'obs id {uri}'
+            assert test_subject.product_id == f'{tile_id}_{product_id}', f'product id {uri}'

@@ -67,6 +67,7 @@
 #
 
 
+from caom2utils.parsers import BlueprintParser, FitsParser
 from caom2pipe import caom_composable as cc
 from euclid2caom2 import main_app
 
@@ -79,8 +80,8 @@ class EUCLIDFits2caom2Visitor(cc.Fits2caom2VisitorRunnerMeta):
         super().__init__(observation, **kwargs)
 
     def _get_mapping(self, dest_uri):
-        if '-NIR-' in dest_uri:
-            return main_app.EUCLIDMappingNIR(
+        if self._storage_name.is_catalog():
+            return main_app.EUCLIDMappingCatalog(
                 self._clients,
                 self._config,
                 dest_uri,
@@ -89,14 +90,33 @@ class EUCLIDFits2caom2Visitor(cc.Fits2caom2VisitorRunnerMeta):
                 self._storage_name,
             )
         else:
-            return main_app.EUCLIDMappingVIS(
-                self._clients,
-                self._config,
-                dest_uri,
-                self._observation,
-                self._reporter,
-                self._storage_name,
-            )
+            if '-NIR-' in dest_uri:
+                return main_app.EUCLIDMappingNIR(
+                    self._clients,
+                    self._config,
+                    dest_uri,
+                    self._observation,
+                    self._reporter,
+                    self._storage_name,
+                )
+            else:
+                return main_app.EUCLIDMappingVIS(
+                    self._clients,
+                    self._config,
+                    dest_uri,
+                    self._observation,
+                    self._reporter,
+                    self._storage_name,
+                )
+
+    def _get_parser(self, blueprint, uri):
+        headers = self._storage_name.metadata.get(uri)
+        if headers is None or len(headers) == 0 or self._storage_name.is_catalog():
+            parser = BlueprintParser(blueprint, uri)
+        else:
+            parser = FitsParser(headers, blueprint, uri)
+        self._logger.debug(f'Created {parser.__class__.__name__} parser for {uri}.')
+        return parser
 
 
 def visit(observation, **kwargs):

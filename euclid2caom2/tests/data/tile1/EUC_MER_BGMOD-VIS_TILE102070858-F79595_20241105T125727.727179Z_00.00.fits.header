@@ -1,0 +1,30 @@
+SIMPLE  =                    T / file does conform to FITS standard             
+BITPIX  =                  -32 / number of bits per data pixel                  
+NAXIS   =                    2 / number of data axes                            
+NAXIS1  =                19200 / length of data axis 1                          
+NAXIS2  =                19200 / length of data axis 2                          
+EXTEND  =                    T / FITS dataset may contain extensions            
+EQUINOX =               2000.0                                                  
+RADESYS = 'ICRS    '                                                            
+CTYPE1  = 'RA---TAN'                                                            
+CUNIT1  = 'deg     '                                                            
+CRVAL1  =           85.8353437                                                  
+CRPIX1  =                 9600                                                  
+CD1_1   =  -2.777777777778E-05                                                  
+CD1_2   =                  0.0                                                  
+CTYPE2  = 'DEC--TAN'                                                            
+CUNIT2  = 'deg     '                                                            
+CRVAL2  =                 -8.5                                                  
+CRPIX2  =                 9600                                                  
+CD2_1   =                  0.0                                                  
+CD2_2   =   2.777777777778E-05                                                  
+FILTER  = 'VIS     '                                                            
+PPOID   = 'MER_ProcessTile_EUCLID_2.0.3-QUICK_RELEASE-pcasenov-PLAN-000000-PBD&'CONTINUE  'PAT6W-20241104-123239-3'                                             
+DATASETR= 'Q1_R1   '                                                            
+PIPDEFID= 'MER_ProcessTile_EUCLID_2.0.3'                                        
+PPLANID = 'MER_ProcessTile_EUCLID_2.0.3-QUICK_RELEASE-pcasenov-PLAN-000000'     
+PSWNAME = 'MER_ProcessTile'                                                     
+PSWREL  = '11.0.1  '                                                            
+COMMENT  FITS (Flexible Image Transport System) format is defined in 'Astronomy 
+COMMENT  and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H  
+END                                                                             

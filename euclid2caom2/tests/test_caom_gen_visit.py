@@ -69,76 +69,106 @@
 from mock import Mock, patch
 
 from astropy.io.votable import parse_single_table
-from caom2utils.data_util import get_local_file_info
+from caom2utils.data_util import get_local_file_headers, get_local_file_info
+from caom2pipe.execute_composable import MetaVisitRunnerMeta
 from euclid2caom2 import file2caom2_augmentation, main_app
 from caom2.diff import get_differences
-from caom2pipe import astro_composable as ac
 from caom2pipe import manage_composable as mc
 
 import glob
+import logging
 import os
+import traceback
 
 
 def pytest_generate_tests(metafunc):
-    obs_id_list = glob.glob(f'{metafunc.config.invocation_dir}/data/*.fits.header')
+    obs_id_list = glob.glob(f'{metafunc.config.invocation_dir}/data/tile*')
     metafunc.parametrize('test_name', obs_id_list)
 
 
 @patch('caom2pipe.astro_composable.get_vo_table')
 def test_main_app(svo_mock, test_name, test_config, tmp_path, change_test_dir):
-    import logging
-    # logging.getLogger().setLevel(logging.DEBUG)
+    test_set = glob.glob(f'{test_name}/*.fits.header')
     svo_mock.side_effect = _svo_mock
     test_config.change_working_directory(tmp_path)
+    test_config.task_types = [mc.TaskType.SCRAPE]
+    test_config.use_local_files = False
+    test_config.log_to_file = True
+    test_config.data_sources = [tmp_path.as_posix()]
+    test_config.change_working_directory(tmp_path.as_posix())
+    test_config.proxy_file_name = 'test_proxy.pem'
+    test_config.logging_level = 'ERROR'
+    test_config.write_to_file(test_config)
+
     test_reporter = mc.ExecutionReporter(test_config, mc.Observable(test_config))
-    storage_name = main_app.EUCLIDName(source_names=[test_name])
-    uri_key = storage_name.destination_uris[0].replace('.header', '')
-    storage_name.file_info[uri_key] = get_local_file_info(test_name)
-    storage_name.file_info[uri_key].file_type = 'application/fits'
-    storage_name.metadata[uri_key] = ac.make_headers_from_file(test_name)
-    kwargs = {
-        'clients': Mock(),
-        'config': test_config,
-        'reporter': test_reporter,
-        'storage_name': storage_name,
-    }
-    expected_fqn = test_name.replace('.fits.header', '.expected.xml')
+
+    expected_fqn = f'{test_name}/{os.path.basename(test_name)}.expected.xml'
     in_fqn = expected_fqn.replace('.expected', '.in')
     actual_fqn = expected_fqn.replace('expected', 'actual')
     if os.path.exists(actual_fqn):
         os.unlink(actual_fqn)
+
     observation = None
     if os.path.exists(in_fqn):
         observation = mc.read_obs_from_file(in_fqn)
-    observation = file2caom2_augmentation.visit(observation, **kwargs)
-    if observation is None:
-        assert False, f'Did not create observation for {test_name}'
-    else:
+
+    with open(test_config.proxy_fqn, 'w') as f:
+        f.write('test content')
+
+    clients_mock = Mock()
+    test_subject = MetaVisitRunnerMeta(clients_mock, test_config, [file2caom2_augmentation], test_reporter)
+    test_subject._observation = observation
+
+    for entry in test_set:
+        def _mock_repo_read(collection, obs_id):
+            return test_subject._observation
+        clients_mock.metadata_client.read.side_effect = _mock_repo_read
+
+        def _read_header_mock(ignore1):
+            return get_local_file_headers(entry)
+        clients_mock.data_client.get_head.side_effect = _read_header_mock
+
+        def _info_mock(uri):
+            temp = get_local_file_info(entry)
+            temp.file_type = 'application/fits'
+            return temp
+        clients_mock.data_client.info.side_effect = _info_mock
+
+        storage_name = main_app.EUCLIDName(source_names=[entry])
+        context = {'storage_name': storage_name}
+        try:
+            test_subject.execute(context)
+        except mc.CadcException as e:
+            logging.error(traceback.format_exc())
+            assert False
+
+    if test_subject._observation:
         if os.path.exists(expected_fqn):
             expected = mc.read_obs_from_file(expected_fqn)
-            compare_result = get_differences(expected, observation)
+            try:
+                compare_result = get_differences(expected, test_subject._observation)
+            except Exception as e:
+                mc.write_obs_to_file(test_subject._observation, actual_fqn)
+                assert False, f'{e}'
             if compare_result is not None:
-                mc.write_obs_to_file(observation, actual_fqn)
+                mc.write_obs_to_file(test_subject._observation, actual_fqn)
                 compare_text = '\n'.join([r for r in compare_result])
-                msg = (
-                    f'Differences found in observation {expected.observation_id}\n'
-                    f'{compare_text}'
+                raise AssertionError(
+                    f'Differences found in observation {expected.observation_id}\n{compare_text}.\nCheck {actual_fqn}'
                 )
-                raise AssertionError(msg)
         else:
-            mc.write_obs_to_file(observation, actual_fqn)
-            assert False, f'nothing to compare to for {test_name}, missing {expected_fqn}'
+            raise AssertionError(f'No expected observation here {expected_fqn}. See actual here {actual_fqn}')
+    else:
+        raise AssertionError(f'No observation created for comparison with {expected_fqn}')
+
     # assert False  # cause I want to see logging messages
 
 
 def _svo_mock(url):
     try:
-        import logging
         x = url.split('/')
         filter_name = x[-1].replace('&VERB=0', '')
-        logging.error(filter_name)
         votable = parse_single_table(f'{os.path.dirname(os.path.realpath(__file__))}/data/filters/{filter_name}.xml')
         return votable, None
     except Exception as _:
-        import logging
         logging.error(f'get_vo_table failure for url {url}')

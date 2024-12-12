@@ -1,0 +1,78 @@
+SIMPLE  =                    T / conforms to FITS standard                      
+BITPIX  =                    8 / array data type                                
+NAXIS   =                    0 / number of array dimensions                     
+EXTEND  =                    T                                                  
+END                                                                             
+XTENSION= 'IMAGE   '           / Image extension                                
+BITPIX  =                  -32 / array data type                                
+NAXIS   =                    2 / number of array dimensions                     
+NAXIS1  =                 5691                                                  
+NAXIS2  =                 5691                                                  
+PCOUNT  =                    0 / number of parameters                           
+GCOUNT  =                    1 / number of groups                               
+EQUINOX =        2000.00000000 / Mean equinox                                   
+RADESYS = 'ICRS    '           / Astrometric system                             
+CTYPE1  = 'RA---TAN'           / WCS projection type for this axis              
+CUNIT1  = 'deg     '           / Axis unit                                      
+CRVAL1  =   8.583534370000E+01 / World coordinate on this axis                  
+CRPIX1  =                 9600 / Reference pixel on this axis                   
+CD1_1   =  -2.777777777778E-05 / Linear projection matrix                       
+CD1_2   =   0.000000000000E+00 / Linear projection matrix                       
+CTYPE2  = 'DEC--TAN'           / WCS projection type for this axis              
+CUNIT2  = 'deg     '           / Axis unit                                      
+CRVAL2  =  -8.500000000000E+00 / World coordinate on this axis                  
+CRPIX2  =                 9600 / Reference pixel on this axis                   
+CD2_1   =   0.000000000000E+00 / Linear projection matrix                       
+CD2_2   =   2.777777777778E-05 / Linear projection matrix                       
+EXPTIME =   8.675544000000E+04 / Maximum equivalent exposure time (s)           
+GAIN    =   6.919933863184E+01 / Maximum equivalent gain (e-/ADU)               
+SATURATE=   5.046275688695E+04 / Saturation Level (ADU)                         
+COMMENT                                                                         
+SOFTNAME= 'CT_SWarp'           / The software that processed those data         
+SOFTVERS= '10.2    '           / Version of the software                        
+SOFTDATE= '2024-03-18'         / Release date of the software                   
+SOFTAUTH= '2020-2024 Euclid Consortium' / Maintainer of the software            
+SOFTINST= 'Euclid Consortium https://www.euclid-ec.org/' / Institute            
+COMMENT                                                                         
+AUTHOR  = 'ial     '           / Who ran the software                           
+ORIGIN  = 'pr-02.sdcit-prod-ops.altecspace.it' / Where it was done              
+DATE    = '2024-11-05T21:06:08' / When it was started (GMT)                     
+COMBINET= 'MEDIAN  '           / COMBINE_TYPE config parameter for CT_SWarp     
+COMMENT                                                                         
+COMMENT  Propagated FITS keywords                                               
+STMPSIZE=                   21 / The PSF stamp size in pixel units              
+COMMENT                                                                         
+COMMENT  Axis-dependent config parameters                                       
+RESAMPT1= 'BILINEAR'           / RESAMPLING_TYPE config parameter               
+CENTERT1= 'ALL     '           / CENTER_TYPE config parameter                   
+PSCALET1= 'MEDIAN  '           / PIXELSCALE_TYPE config parameter               
+RESAMPT2= 'BILINEAR'           / RESAMPLING_TYPE config parameter               
+CENTERT2= 'ALL     '           / CENTER_TYPE config parameter                   
+PSCALET2= 'MEDIAN  '           / PIXELSCALE_TYPE config parameter               
+EXTNAME = 'PSF image'          / The MER catalog-PSF image                      
+FWHM    =   0.2047095865715955 / The central PSF stamp FWHM value in arcseconds 
+END                                                                             
+XTENSION= 'BINTABLE'           / binary table extension                         
+BITPIX  =                    8 / array data type                                
+NAXIS   =                    2 / number of array dimensions                     
+NAXIS1  =                   56 / length of dimension 1                          
+NAXIS2  =                73233 / length of dimension 2                          
+PCOUNT  =                    0 / number of group parameters                     
+GCOUNT  =                    1 / number of groups                               
+TFIELDS =                    7 / number of table fields                         
+TTYPE1  = 'x_center'                                                            
+TFORM1  = 'D       '                                                            
+TTYPE2  = 'y_center'                                                            
+TFORM2  = 'D       '                                                            
+TTYPE3  = 'x       '                                                            
+TFORM3  = 'D       '                                                            
+TTYPE4  = 'y       '                                                            
+TFORM4  = 'D       '                                                            
+TTYPE5  = 'RA      '                                                            
+TFORM5  = 'D       '                                                            
+TTYPE6  = 'Dec     '                                                            
+TFORM6  = 'D       '                                                            
+TTYPE7  = 'FWHM    '                                                            
+TFORM7  = 'D       '                                                            
+EXTNAME = 'Stamps information' / The MER catalog-PSF stamps information         
+END                                                                             
