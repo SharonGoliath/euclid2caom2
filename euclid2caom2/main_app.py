@@ -357,7 +357,7 @@ FILTER_REPAIR_LOOKUP = {
     'VIS': 'VIS.vis',
 }
 
-INSTRUMENT_REPAIR_LOOKUP = {}
+INSTRUMENT_REPAIR_LOOKUP = {'NIR': 'NISP'}
 
 filter_cache = FilterMetadataCache(
     repair_filter_lookup=FILTER_REPAIR_LOOKUP,
