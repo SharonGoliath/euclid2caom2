@@ -199,7 +199,7 @@ class EUCLIDMappingAuxiliary(cc.TelescopeMapping2):
         bp.set('Plane.provenance.reference', 'https://www.euclid-ec.org')
 
         bp.set('Artifact.productType', ProductType.AUXILIARY)
-        bp.set('Artifact.releaseType', ReleaseType.META)
+        bp.set('Artifact.releaseType', ReleaseType.DATA)
 
     def _get_instrument_name(self, ext):
         result = None
